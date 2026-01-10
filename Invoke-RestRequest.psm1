@@ -1,9 +1,9 @@
 <#
 .NOTES
     Author: < Thomas@klijnman.nl >
-    Created: 2024-06-10
-    Updated: 2024-06-10
-    Version: 1.0.0
+    Created: 10/06/2025
+    Updated: 10/01/2026
+    Version: 1.2.0
     GitHub: https://github.com/ThomasKlijnman/Invoke-RestRequest
 
     Special Thanks to: https://github.com/zh54321 for his inspiration on this module.
