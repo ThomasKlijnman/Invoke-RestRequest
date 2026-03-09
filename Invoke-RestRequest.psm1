@@ -34,6 +34,7 @@ function Invoke-RestRequest {
         [string]$ApiVersion = 'v1.0',  # Specifies the API version to target.
         [switch]$RawJson,  # If specified, returns the response as a raw JSON string instead of a PowerShell object.
         [string]$Proxy,  # Use a Proxy (e.g. -Proxy "http://127.0.0.1:8080").
+        [switch]$SkipCertificateCheck, # For use to skip any TLS certificate validation; only supported to be used in Powershell 7+.
 
         # Optional parameters for Invoke-RestMethod
         [hashtable]$IrmCustomParameters, # Additional Boolean only parameters to pass to IRM (e.g. SkipCertificateCheck, etc.) 
@@ -60,8 +61,17 @@ function Invoke-RestRequest {
 
     # Use provided base URI if available, otherwise use the default base URI
     $FullUri = if ($ProvidedBaseUri) { "$ProvidedBaseUri$Uri" } else { "$BaseUri$Uri" }
+    
+    # If Skip Cert
+    if ($SkipCertificateCheck) {
+        if ($PSVersionTable.PSVersion.Major -ge 7) {
+            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+        } else {
+            Write-Host "PowerShell version is major version: $($PSVersionTable.PSVersion.Major), skipping certificate check switch."
+        }
+    }
 
-
+    
     #Add query parameters
     if ($QueryParameters) {
         $QueryString = ($QueryParameters.GetEnumerator() | 
@@ -231,3 +241,4 @@ function Invoke-RestRequest {
     }
 }
 #endregion Invoke REST Request
+
