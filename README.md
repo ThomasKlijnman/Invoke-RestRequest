@@ -17,27 +17,27 @@ Invoke-RestRequest is a PowerShell module designed to simplify making requests t
 
 ### Parameters
 
-| Parameter                  | Type       | Mandatory | Description                                                                                              |
+| Parameter                  | Type       | Mandatory | Description                                                                                                       |
 |----------------------------|------------|-----------|----------------------------------------------------------------------------------------------------------|
-| `$AccessToken`             | string     | Yes       | Bearer token for authentication. Advice to not store in plain text during usage.                         |
-| `$Method`                  | string     | Yes       | HTTP method to use (GET, POST, PATCH, PUT, DELETE).                                                    |
-| `$Uri`                     | string     | Yes       | Relative URI (e.g. /users).                                                                              |
-| `$Body`                    | hashtable  | No        | Request body as a PowerShell hashtable/object (will be converted to JSON).                              |
-| `$MaxRetries`              | int        | No        | Specifies the maximum number of retry attempts for failed requests (Default: 5).                        |
-| `$ApiVersion`              | string     | No        | Specifies the API version to target.                                                                     |
-| `$RawJson`                 | switch     | No        | If specified, returns the response as a raw JSON string instead of a PowerShell object.                 |
-| `$Proxy`                   | string     | No        | Use a Proxy (e.g. -Proxy "http://127.0.0.1:8080").                                                     |
-| `$IrmCustomParameters`      | hashtable  | No        | Additional Boolean only parameters to pass to IRM (e.g. SkipCertificateCheck, etc.)       |
-| `$IrmTimeout`              | int        | No        | Timeout in seconds for IRM (Default: 15 seconds).                                         |
-| `$IrmUserAgent`            | string     | No        | Custom UserAgent string for IRM to pass.                                                                 |
-| `$DisablePagination`       | switch     | No        | Prevents the function from automatically following @odata.nextLink for paginated results.                |
-| `$VerboseMode`             | switch     | No        | Enables verbose logging to provide additional information about request processing.                       |
-| `$Suppress404`             | switch     | No        | Suppress 404 messages (e.g., if a queried User object is not found in the tenant).                      |
-| `$QueryParameters`         | hashtable  | No        | Query parameters for more complex queries (e.g. @{ '$filter' = "startswith(displayName,'Alex')"}).     |
-| `$AdditionalHeaders`       | hashtable  | No        | Add additional HTTP headers (e.g. for ConsistencyLevel).                                               |
+| `$AccessToken`             | string     | Yes       | Bearer token for authentication. Advice to not store in plain text during usage.                                  |
+| `$Method`                  | string     | Yes       | HTTP method to use (GET, POST, PATCH, PUT, DELETE).                                                               |
+| `$Uri`                     | string     | Yes       | Relative URI (e.g. /users).                                                                                       |
+| `$Body`                    | hashtable  | No        | Request body as a PowerShell hashtable/object (will be converted to JSON).                                        |
+| `$MaxRetries`              | int        | No        | Specifies the maximum number of retry attempts for failed requests (Default: 5).                                  |
+| `$ApiVersion`              | string     | No        | Specifies the API version to target.                                                                              |
+| `$RawJson`                 | switch     | No        | If specified, returns the response as a raw JSON string instead of a PowerShell object.                           |
+| `$Proxy`                   | string     | No        | Use a Proxy (e.g. -Proxy "http://127.0.0.1:8080").                                                                |
+| `$SkipCertificateCheck`    | switch     | No        | Parameter to skip any TLS certificate validation; only supported to be used in Powershell 7.                      |
+| `$IrmCustomParameters`     | hashtable  | No        | Additional Boolean only parameters to pass to IRM (e.g. SkipCertificateCheck, etc.)                               |
+| `$IrmTimeout`              | int        | No        | Timeout in seconds for IRM (Default: 15 seconds).                                                                 |
+| `$IrmUserAgent`            | string     | No        | Custom UserAgent string for IRM to pass.                                                                          |
+| `$DisablePagination`       | switch     | No        | Prevents the function from automatically following @odata.nextLink for paginated results.                         |
+| `$VerboseMode`             | switch     | No        | Enables verbose logging to provide additional information about request processing.                               |
+| `$Suppress404`             | switch     | No        | Suppress 404 messages (e.g., if a queried User object is not found in the tenant).                                |
+| `$QueryParameters`         | hashtable  | No        | Query parameters for more complex queries (e.g. @{ '$filter' = "startswith(displayName,'Alex')"}).                |
+| `$AdditionalHeaders`       | hashtable  | No        | Add additional HTTP headers (e.g. for ConsistencyLevel).                                                          |
 | `$JsonDepthResponse`       | int        | No        | Specifies the depth for JSON conversion (request). Useful for deeply nested objects in combination with -RawJson. |
-| `$ProvidedBaseUri`        | string     | No        | Parameter for custom base URI for custom REST API endpoints.                                            |
-| `$SkipCertificateCheck`        | switch     | No        | Parameter to skip any TLS certificate validation; only supported to be used in Powershell 7.                                            |
+| `$ProvidedBaseUri`         | string     | No        | Parameter for custom base URI for custom REST API endpoints.                                                      |
 
 
 
