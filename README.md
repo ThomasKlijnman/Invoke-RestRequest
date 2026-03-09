@@ -37,6 +37,7 @@ Invoke-RestRequest is a PowerShell module designed to simplify making requests t
 | `$AdditionalHeaders`       | hashtable  | No        | Add additional HTTP headers (e.g. for ConsistencyLevel).                                               |
 | `$JsonDepthResponse`       | int        | No        | Specifies the depth for JSON conversion (request). Useful for deeply nested objects in combination with -RawJson. |
 | `$ProvidedBaseUri`        | string     | No        | Parameter for custom base URI for custom REST API endpoints.                                            |
+| `$SkipCertificateCheck`        | switch     | No        | Parameter to skip any TLS certificate validation; only supported to be used in Powershell 7.                                            |
 
 
 
