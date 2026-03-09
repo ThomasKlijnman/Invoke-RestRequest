@@ -28,7 +28,7 @@ Invoke-RestRequest is a PowerShell module designed to simplify making requests t
 | `$RawJson`                 | switch     | No        | If specified, returns the response as a raw JSON string instead of a PowerShell object.                           |
 | `$Proxy`                   | string     | No        | Use a Proxy (e.g. -Proxy "http://127.0.0.1:8080").                                                                |
 | `$SkipCertificateCheck`    | switch     | No        | Parameter to skip any TLS certificate validation; only supported to be used in Powershell 7.                      |
-| `$IrmCustomParameters`     | hashtable  | No        | Additional Boolean only parameters to pass to IRM (e.g. SkipCertificateCheck, etc.)                               |
+| `$IrmCustomParameters`     | hashtable  | No        | Additional Boolean only parameters to pass to IRM                                                                 |
 | `$IrmTimeout`              | int        | No        | Timeout in seconds for IRM (Default: 15 seconds).                                                                 |
 | `$IrmUserAgent`            | string     | No        | Custom UserAgent string for IRM to pass.                                                                          |
 | `$DisablePagination`       | switch     | No        | Prevents the function from automatically following @odata.nextLink for paginated results.                         |
