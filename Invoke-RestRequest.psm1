@@ -37,7 +37,7 @@ function Invoke-RestRequest {
         [switch]$SkipCertificateCheck, # For use to skip any TLS certificate validation; only supported to be used in Powershell 7+.
 
         # Optional parameters for Invoke-RestMethod
-        [hashtable]$IrmCustomParameters, # Additional Boolean only parameters to pass to IRM (e.g. SkipCertificateCheck, etc.) 
+        [hashtable]$IrmCustomParameters, # Additional Boolean only parameters to pass to IRM. 
         [int]$IrmTimeout = 15, # Timeout in seconds for IRM (Default: 15 seconds).  
         [string]$IrmUserAgent = 'Rest API Client/1.0',  # Custom UserAgent string for the request.
 
@@ -241,4 +241,5 @@ function Invoke-RestRequest {
     }
 }
 #endregion Invoke REST Request
+
 
