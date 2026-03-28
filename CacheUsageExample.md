@@ -2,6 +2,7 @@
 Initialize-RestRequestCache
 
 # 2. First call => fetch data from API, store in cache (1 hour TTL)
+```powershell
 $params = @{
     AccessToken      = $token
     Method           = "GET"
@@ -12,8 +13,10 @@ $params = @{
     VerboseMode      = $true
 }
 $users = Invoke-RestRequest @params
+```
 
 # 3. Second call => fetch data from cache via cacheKey
+```powershell
 $params = @{
     AccessToken = $token
     Method      = "GET"
@@ -23,8 +26,10 @@ $params = @{
     VerboseMode = $true
 }
 $users = Invoke-RestRequest @params
+```
 
 # 4. Force new data => bypass current cache, and refill with cacheKey
+```powershell
 $params = @{
     AccessToken = $token
     Method      = "GET"
@@ -35,8 +40,11 @@ $params = @{
     VerboseMode = $true
 }
 $users = Invoke-RestRequest @params
+```
 
 # 5. Manage cache
+```powershell
 Get-RestRequestCacheInfo                  		# See what is in cache
 Remove-RestRequestCache -CacheKey "all_user" 	# Remove specific entry
 Remove-RestRequestCache                    	# Clear all cache
+```
