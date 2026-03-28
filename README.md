@@ -1,14 +1,18 @@
 ## Still Work in Progress (WIP)
+![PowerShell](https://img.shields.io/badge/PowerShell-7+-blue) ![Usage](https://img.shields.io/badge/usage_for-REST_API-blue) ![License](https://img.shields.io/github/license/thomasklijnman/Invoke-RestRequest)
+
 ## README for Invoke-RestRequest PowerShell Module
 
 ### Overview
 Invoke-RestRequest is a PowerShell module designed to simplify making requests to REST-based APIs. This module clears the process of providing built-in support for retries, pagination, and error handling, making it somewhat easier to interact with these APIs.
 
 ### Features
-- **Available Methods**: Compatible with GET, POST, PATCH, PUT, and DELETE methods.
+- **Available Methods**: Compatible with any regular HTTP methods GET, POST, PATCH, PUT, and DELETE.
 - **Retry Logic**: Retry failed request logic for backoff.
 - **Pagination Handling**: Follow any pagination links for multi-page results.
 - **Error Handling**: Def. mapping of HTTP status codes to PowerShell error categories.
+- **Cache Management**: To push any responses or long request with static data during the run to a cache, to be retrieved later via a cache key and the possibility to expire the cache key during the run.
+  - See [Cache example](CacheUsageExample.md) for example usages.
 - **Customizable Requests**:
   - Define request bodies as PowerShell hashtables that automatically convert to JSON.
   - Add custom HTTP headers.
@@ -38,6 +42,11 @@ Invoke-RestRequest is a PowerShell module designed to simplify making requests t
 | `$AdditionalHeaders`       | hashtable  | No        | Add additional HTTP headers (e.g. for ConsistencyLevel).                                                          |
 | `$JsonDepthResponse`       | int        | No        | Specifies the depth for JSON conversion (request). Useful for deeply nested objects in combination with -RawJson. |
 | `$ProvidedBaseUri`         | string     | No        | Parameter for custom base URI for custom REST API endpoints.                                                      |
+| `$UseCache`	             | switch     | No        | Enable caching for this request                                                                                   |
+| `$CacheKey`	             | string     | No        | Unique cache identifier                                                                                           |
+| `$SkipCache`	             | switch     | No        | Bypass cache for this request (force fresh data)                                                                  |
+| `$CacheTtlSeconds`         | int        | No        | TTL in seconds (optional), to be used in combination with $CacheKey                                               |
+
 
 
 
