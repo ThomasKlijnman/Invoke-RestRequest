@@ -1,5 +1,5 @@
 ## Still Work in Progress (WIP)
-![PowerShell](https://img.shields.io/badge/PowerShell-7+-blue) ![Usage]https://img.shields.io/badge/usage_for-REST_API-blue ![License](https://img.shields.io/github/license/thomasklijnman/Invoke-RestRequest)
+![PowerShell](https://img.shields.io/badge/PowerShell-7+-blue) ![Usage](https://img.shields.io/badge/usage_for-REST_API-blue) ![License](https://img.shields.io/github/license/thomasklijnman/Invoke-RestRequest)
 
 ## README for Invoke-RestRequest PowerShell Module
 
