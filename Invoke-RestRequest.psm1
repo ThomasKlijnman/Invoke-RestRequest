@@ -6,7 +6,9 @@
     Version: 1.3.0
     GitHub: https://github.com/ThomasKlijnman/Invoke-RestRequest
 
-    Special Thanks to: https://github.com/zh54321 for his original inspiration on this module.
+    Special Thanks to
+    - https://github.com/zh54321 for his original inspiration on this module.
+    - https://github.com/merill for his inspiration on cache management in Maester.dev
 
 .DESCRIPTION
     A generic PowerShell module to simplify making requests to REST based API's and support for retries, pagination, and error handling.
