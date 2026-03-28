@@ -2,19 +2,30 @@
 .NOTES
     Author: < Thomas@klijnman.nl >
     Created: 10/06/2025
-    Updated: 10/01/2026
-    Version: 1.2.0
+    Updated: 28/03/2026
+    Version: 1.3.0
     GitHub: https://github.com/ThomasKlijnman/Invoke-RestRequest
 
-    Special Thanks to: https://github.com/zh54321 for his inspiration on this module.
+    Special Thanks to: https://github.com/zh54321 for his original inspiration on this module.
 
 .DESCRIPTION
     A generic PowerShell module to simplify making requests to REST based API's and support for retries, pagination, and error handling.
 
 #>
 
-# region Invoke REST Request
+#region Invoke REST Request
 function Invoke-RestRequest {
+    <#
+    .SYNOPSIS
+    Generic REST API wrapper with retry, pagination, caching and advanced request handling.
+
+    .DESCRIPTION
+    Invoke-RestRequest is a flexible wrapper around Invoke-RestMethod designed for working 
+    with REST APIs such as Microsoft Graph and custom endpoints. It supports features like automatic pagination, retry logic with exponential backoff, and optional caching of responses to improve performance.
+
+    See cmdlet parameters for detailed usage instructions.
+    #>
+
     [CmdletBinding()]
     param (
         # Mandatory parameters for authentication and request method
@@ -53,8 +64,15 @@ function Invoke-RestRequest {
         [int]$JsonDepthResponse = 10,  # Specifies the depth for JSON conversion (request). Useful for deeply nested objects in combination with -RawJson.
 
         # Optional base URI parameter
-        [string]$ProvidedBaseUri  # Parameter for custom base URI for custom REST API endpoints.
+        [string]$ProvidedBaseUri,  # Parameter for custom base URI for custom REST API endpoints.
+
+        # Cache-related parameters (OPTIONAL, default disabled)
+        [switch]$UseCache,           # Enable caching for this request
+        [string]$CacheKey,           # Unique cache identifier
+        [switch]$SkipCache,          # Bypass cache for this request (force fresh data)
+        [int]$CacheTtlSeconds       # TTL in seconds (optional)
     )
+    
     
     # Default base URI for the Microsoft Graph API
     $BaseUri = "https://graph.microsoft.com/$ApiVersion"
@@ -97,6 +115,22 @@ function Invoke-RestRequest {
     $RetryCount = 0
     $Results = @()
 
+    # Attempt to retrieve cached result if caching is enabled and cache key is provided
+    if ($UseCache -and -not $SkipCache -and $CacheKey) {
+        $cachedResult = Get-RestRequestCache -CacheKey $CacheKey
+        if ($null -ne $cachedResult) {
+            if ($VerboseMode) { Write-Host "[*] Returning cached result for key: $CacheKey" }
+            
+            # Return cached result in the requested format
+            if ($RawJson) {
+                return $cachedResult | ConvertTo-Json -Depth $JsonDepthResponse
+            }
+            else {
+                return $cachedResult
+            }
+        }
+    }
+
     # Prepare Invoke-RestMethod parameters
     $irmParams = @{
         Uri             = $FullUri
@@ -120,6 +154,7 @@ function Invoke-RestRequest {
     if ($Proxy) {
         $irmParams.Proxy = $Proxy
     }
+    
 
     do {
         try {
@@ -157,6 +192,12 @@ function Invoke-RestRequest {
                 } else {
                     $Results += $Response
                 }
+            }
+
+            # Store the results in cache if caching is enabled and a cache key is provided
+            if ($UseCache -and $CacheKey) {
+                Set-RestRequestCache -CacheKey $CacheKey -Value $Results -TtlSeconds $CacheTtlSeconds
+                if ($VerboseMode) { Write-Host "[*] Cached result with key: $CacheKey" }
             }
 
             break
@@ -240,6 +281,198 @@ function Invoke-RestRequest {
         return $Results
     }
 }
-#endregion Invoke REST Request
+#endregion 
+
+#region Initialize Cache
+function Initialize-RestRequestCache {
+    <#
+    .SYNOPSIS
+        Initializes the REST request cache for the current PowerShell session.
+
+    .DESCRIPTION
+        Creates a global, session-scoped hashtable used to cache REST API responses.
+        This cache improves performance by preventing repeated API calls for the same data.
+
+        The cache is stored in a global variable named '__RestRequestCache' and persists
+        for the duration of the PowerShell session.
+
+        This function is safe to call multiple times. If the cache already exists,
+        the function will not overwrite existing cached entries.
+    #>
+
+    if (-not (Get-Variable -Name '__RestRequestCache' -Scope Global -ErrorAction SilentlyContinue)) {
+        $global:__RestRequestCache = @{}
+        Write-Verbose "REST Request cache initialized."
+    }
+}
+#endregion
+
+#region Get Cache
+function Get-RestRequestCache {
+    <#
+    .SYNOPSIS
+        Retrieves a cached REST response from the session cache.
+
+    .DESCRIPTION
+        Returns a cached value based on the provided cache key. If the cache entry
+        has expired (based on TTL), it will automatically be removed and $null returned.
+
+        Optionally returns metadata such as creation time and expiration time.
+
+    .PARAMETER CacheKey
+        The unique identifier used to store and retrieve cached data.
+
+    .PARAMETER IncludeMetadata
+        Returns the full cache entry including metadata (CreatedAt, ExpiresAt, Value).
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$CacheKey,
+
+        [switch]$IncludeMetadata
+    )
+
+    if (-not (Get-Variable -Name '__RestRequestCache' -Scope Global -ErrorAction SilentlyContinue)) {
+        return $null
+    }
+
+    $cacheEntry = $global:__RestRequestCache[$CacheKey]
+
+    if ($null -eq $cacheEntry) {
+        return $null
+    }
+
+    # Check if TTL has expired
+    if ($cacheEntry.ExpiresAt -and (Get-Date) -gt $cacheEntry.ExpiresAt) {
+        $global:__RestRequestCache.Remove($CacheKey)
+        Write-Verbose "Cache entry '$CacheKey' has expired and was removed."
+        return $null
+    }
+
+    if ($IncludeMetadata) {
+        return $cacheEntry
+    }
+
+    return $cacheEntry.Value
+}
+#endregion
+
+#region Set Cache
+function Set-RestRequestCache {
+    <#
+    .SYNOPSIS
+        Stores a REST response in the session cache.
+
+    .DESCRIPTION
+        Adds or updates a cached entry using a unique cache key.
+        Cached entries can optionally expire using a Time-To-Live (TTL) value.
+
+        If no TTL is specified, the cache entry will persist for the entire session.
+
+    .PARAMETER CacheKey
+        The unique identifier used to store the cached value.
+
+    .PARAMETER Value
+        The data to cache. Typically the REST API response.
+
+    .PARAMETER TtlSeconds
+        Time-to-live in seconds. When expired, the cache entry is automatically removed.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$CacheKey,
+
+        [Parameter(Mandatory)]
+        $Value,
+
+        [int]$TtlSeconds
+    )
+
+    Initialize-RestRequestCache
+
+    $cacheEntry = @{
+        Value     = $Value
+        CreatedAt = Get-Date
+        ExpiresAt = if ($TtlSeconds) { (Get-Date).AddSeconds($TtlSeconds) } else { $null }
+    }
+
+    if ($global:__RestRequestCache.ContainsKey($CacheKey)) {
+        $global:__RestRequestCache[$CacheKey] = $cacheEntry
+        Write-Verbose "Cache entry '$CacheKey' updated."
+    } else {
+        $global:__RestRequestCache.Add($CacheKey, $cacheEntry)
+        Write-Verbose "Cache entry '$CacheKey' created."
+    }
+}
+#endregion
+
+#region Remove Cache
+function Remove-RestRequestCache {
+    <#
+    .SYNOPSIS
+        Removes cache entries from the REST request cache.
+
+    .DESCRIPTION
+        Removes a specific cache entry using a cache key, or clears the entire cache
+        when no cache key is specified.
+
+    .PARAMETER CacheKey
+        Optional cache key to remove a specific entry.
+        If omitted, all cache entries are removed.
+
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$CacheKey
+    )
+
+    if (-not (Get-Variable -Name '__RestRequestCache' -Scope Global -ErrorAction SilentlyContinue)) {
+        Write-Verbose "No cache to clear."
+        return
+    }
+
+    if ($CacheKey) {
+        $global:__RestRequestCache.Remove($CacheKey)
+        Write-Verbose "Cache entry '$CacheKey' removed."
+    } else {
+        $global:__RestRequestCache.Clear()
+        Write-Verbose "All cache entries cleared."
+    }
+}
+#endregion
+
+#region Get Cache Info
+function Get-RestRequestCacheInfo {
+    <#
+    .SYNOPSIS
+        Displays information about all cached REST entries.
+
+    .DESCRIPTION
+        Returns a list of cached entries including creation time,
+        expiration time, and expiration status.
+
+        Useful for debugging cache behavior.
+
+    #>
+    [CmdletBinding()]
+    param()
+
+    if (-not (Get-Variable -Name '__RestRequestCache' -Scope Global -ErrorAction SilentlyContinue)) {
+        Write-Host "Cache is not initialized."
+        return
+    }
+
+    $global:__RestRequestCache.GetEnumerator() | ForEach-Object {
+        [PSCustomObject]@{
+            CacheKey  = $_.Key
+            CreatedAt = $_.Value.CreatedAt
+            ExpiresAt = $_.Value.ExpiresAt
+            IsExpired = if ($_.Value.ExpiresAt) { (Get-Date) -gt $_.Value.ExpiresAt } else { $false }
+        }
+    }
+}
+#endregion
 
 
