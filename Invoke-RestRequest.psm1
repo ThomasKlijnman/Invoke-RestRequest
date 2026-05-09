@@ -68,17 +68,22 @@ function Invoke-RestRequest {
 
         # Cache-related parameters (OPTIONAL, default disabled)
         [switch]$UseCache,           # Enable caching for this request
-        [string]$CacheKey,           # Unique cache identifier
+        [string]$CacheKey,           # Unique cache identifier; auto-generated from Method+URI when omitted
         [switch]$SkipCache,          # Bypass cache for this request (force fresh data)
         [int]$CacheTtlSeconds       # TTL in seconds (optional)
     )
-    
-    
+
+
     # Default base URI for the Microsoft Graph API
     $BaseUri = "https://graph.microsoft.com/$ApiVersion"
 
     # Use provided base URI if available, otherwise use the default base URI
     $FullUri = if ($ProvidedBaseUri) { "$ProvidedBaseUri$Uri" } else { "$BaseUri$Uri" }
+
+    # Auto-generate a stable cache key from Method + URI when UseCache is set but no key was provided
+    if ($UseCache -and -not $CacheKey) {
+        $CacheKey = "$Method|$FullUri"
+    }
     
     # If Skip Cert
     if ($SkipCertificateCheck) {
@@ -247,7 +252,6 @@ function Invoke-RestRequest {
                     Start-Sleep -Seconds ([int]$RetryAfter)
                 } elseif ($RetryCount -eq 0) {
                     Write-Host "[*] [$StatusCode] - Retrying immediately..."
-                    Start-Sleep -Seconds 0
                 } else {
                     $Backoff = [math]::Pow(2, $RetryCount)
                     Write-Host "[*] [$StatusCode] - Retrying in $Backoff seconds..."
@@ -333,9 +337,7 @@ function Get-RestRequestCache {
         [switch]$IncludeMetadata
     )
 
-    if (-not (Get-Variable -Name '__RestRequestCache' -Scope Global -ErrorAction SilentlyContinue)) {
-        return $null
-    }
+    Initialize-RestRequestCache
 
     $cacheEntry = $global:__RestRequestCache[$CacheKey]
 
@@ -398,13 +400,9 @@ function Set-RestRequestCache {
         ExpiresAt = if ($TtlSeconds) { (Get-Date).AddSeconds($TtlSeconds) } else { $null }
     }
 
-    if ($global:__RestRequestCache.ContainsKey($CacheKey)) {
-        $global:__RestRequestCache[$CacheKey] = $cacheEntry
-        Write-Verbose "Cache entry '$CacheKey' updated."
-    } else {
-        $global:__RestRequestCache.Add($CacheKey, $cacheEntry)
-        Write-Verbose "Cache entry '$CacheKey' created."
-    }
+    $isUpdate = $global:__RestRequestCache.ContainsKey($CacheKey)
+    $global:__RestRequestCache[$CacheKey] = $cacheEntry
+    Write-Verbose "Cache entry '$CacheKey' $(if ($isUpdate) { 'updated' } else { 'created' })."
 }
 #endregion
 
@@ -423,22 +421,23 @@ function Remove-RestRequestCache {
         If omitted, all cache entries are removed.
 
     #>
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [string]$CacheKey
     )
 
-    if (-not (Get-Variable -Name '__RestRequestCache' -Scope Global -ErrorAction SilentlyContinue)) {
-        Write-Verbose "No cache to clear."
-        return
-    }
+    Initialize-RestRequestCache
 
     if ($CacheKey) {
-        $global:__RestRequestCache.Remove($CacheKey)
-        Write-Verbose "Cache entry '$CacheKey' removed."
+        if ($PSCmdlet.ShouldProcess($CacheKey, 'Remove cache entry')) {
+            $global:__RestRequestCache.Remove($CacheKey)
+            Write-Verbose "Cache entry '$CacheKey' removed."
+        }
     } else {
-        $global:__RestRequestCache.Clear()
-        Write-Verbose "All cache entries cleared."
+        if ($PSCmdlet.ShouldProcess('all entries', 'Clear cache')) {
+            $global:__RestRequestCache.Clear()
+            Write-Verbose "All cache entries cleared."
+        }
     }
 }
 #endregion
@@ -459,20 +458,28 @@ function Get-RestRequestCacheInfo {
     [CmdletBinding()]
     param()
 
-    if (-not (Get-Variable -Name '__RestRequestCache' -Scope Global -ErrorAction SilentlyContinue)) {
-        Write-Host "Cache is not initialized."
-        return
-    }
+    Initialize-RestRequestCache
 
-    $global:__RestRequestCache.GetEnumerator() | ForEach-Object {
+    $now = Get-Date
+    $expiredKeys = @()
+
+    $results = $global:__RestRequestCache.GetEnumerator() | ForEach-Object {
+        $isExpired = $_.Value.ExpiresAt -and $now -gt $_.Value.ExpiresAt
+        if ($isExpired) { $expiredKeys += $_.Key }
+
         [PSCustomObject]@{
             CacheKey  = $_.Key
             CreatedAt = $_.Value.CreatedAt
             ExpiresAt = $_.Value.ExpiresAt
-            IsExpired = if ($_.Value.ExpiresAt) { (Get-Date) -gt $_.Value.ExpiresAt } else { $false }
+            IsExpired = $isExpired
         }
     }
+
+    foreach ($key in $expiredKeys) {
+        $global:__RestRequestCache.Remove($key)
+        Write-Verbose "Pruned expired cache entry '$key'."
+    }
+
+    $results
 }
 #endregion
-
-
